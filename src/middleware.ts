@@ -1,46 +1,54 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+  import type { NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  export async function middleware(request: NextRequest) {
+    const { pathname } = request.nextUrl;
 
-  // Check authentication by calling backend
-  try {
-    const response = await fetch("https://weatherbackend.duckdns.org/auth/profile", {
-      method: "GET",
-      headers: {
-        Cookie: request.headers.get("cookie") || "", // Forward cookies
-      },
-      credentials: "include", // Include token cookie
-    });
+    console.log("Middleware: Checking auth for", pathname); // Debug log
 
-    const isLoggedIn = response.ok;
+    try {
+      const cookieHeader = request.headers.get("cookie") || "";
+      console.log("Middleware: Cookie header:", cookieHeader); // Debug cookie
 
-    const isAuthRoute = pathname.startsWith("/auth") || pathname === "/";
-    const isDashboardRoute = pathname.startsWith("/dashboard");
+      const response = await fetch("https://weatherbackend.duckdns.org/auth/profile", {
+        method: "GET",
+        headers: {
+          Cookie: cookieHeader,
+          Origin: "https://main.d3g541h41hp0zb.amplifyapp.com", // Match CORS origin
+        },
+        credentials: "include", // Include token cookie
+      });
 
-    if (isLoggedIn && isAuthRoute) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
+      console.log("Middleware: /auth/profile response status:", response.status); // Debug status
 
-    if (!isLoggedIn && isDashboardRoute) {
+      const isLoggedIn = response.ok;
+
+      const isAuthRoute = pathname.startsWith("/auth") || pathname === "/";
+      const isDashboardRoute = pathname.startsWith("/dashboard");
+
+      if (isLoggedIn && isAuthRoute) {
+        console.log("Middleware: Redirecting authenticated user to /dashboard");
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+
+      if (!isLoggedIn && isDashboardRoute) {
+        console.log("Middleware: Redirecting unauthenticated user to /auth/login");
+        return NextResponse.redirect(new URL("/auth/login", request.url));
+      }
+
+      if (!isLoggedIn && pathname === "/") {
+        console.log("Middleware: Redirecting unauthenticated root to /auth/login");
+        return NextResponse.redirect(new URL("/auth/login", request.url));
+      }
+    } catch (error) {
+      console.error("Middleware auth check failed:", error);
       return NextResponse.redirect(new URL("/auth/login", request.url));
     }
 
-    if (!isLoggedIn && pathname === "/") {
-      return NextResponse.redirect(new URL("/auth/login", request.url));
-    }
-  } catch (error) {
-    console.error("Middleware auth check failed:", error);
-    // Redirect to login on error
-    return NextResponse.redirect(new URL("/auth/login", request.url));
+    console.log("Middleware: Allowing request to proceed");
+    return NextResponse.next();
   }
 
-  // Allow request to proceed
-  return NextResponse.next();
-}
-
-// Apply middleware to specific routes
-export const config = {
-  matcher: ["/", "/auth/:path*", "/dashboard/:path*"],
-};
+  export const config = {
+    matcher: ["/", "/auth/:path*", "/dashboard/:path*"],
+  };
