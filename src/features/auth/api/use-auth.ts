@@ -29,10 +29,10 @@ export function useAuth() {
         headers: {
           "Content-Type": "application/json",
         },
-        console.log(API_BASE_URL);
         body: JSON.stringify({ email, password }),
         credentials: "include", // Sets jwt cookie
       });
+      console.log(API_BASE_URL);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Login failed");
