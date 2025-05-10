@@ -1,24 +1,39 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const jwtCookie = request.cookies.get("token");
 
-  const isLoggedIn = !!jwtCookie;
+  // Check authentication by calling backend
+  try {
+    const response = await fetch("https://weatherbackend.duckdns.org/auth/profile", {
+      method: "GET",
+      headers: {
+        Cookie: request.headers.get("cookie") || "", // Forward cookies
+      },
+      credentials: "include", // Include token cookie
+    });
 
-  const isAuthRoute = pathname.startsWith("/auth") || pathname === "/";
-  const isDashboardRoute = pathname.startsWith("/dashboard");
+    const isLoggedIn = response.ok;
 
-  if (isLoggedIn && isAuthRoute) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
+    const isAuthRoute = pathname.startsWith("/auth") || pathname === "/";
+    const isDashboardRoute = pathname.startsWith("/dashboard");
 
-  if (!isLoggedIn && isDashboardRoute) {
+    if (isLoggedIn && isAuthRoute) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+
+    if (!isLoggedIn && isDashboardRoute) {
+      return NextResponse.redirect(new URL("/auth/login", request.url));
+    }
+
+    if (!isLoggedIn && pathname === "/") {
+      return NextResponse.redirect(new URL("/auth/login", request.url));
+    }
+  } catch (error) {
+    console.error("Middleware auth check failed:", error);
+    // Redirect to login on error
     return NextResponse.redirect(new URL("/auth/login", request.url));
-  }
-  if(!isLoggedIn && pathname === "/"){
-    return NextResponse.redirect(new URL("/auth/login" , request.url))
   }
 
   // Allow request to proceed
