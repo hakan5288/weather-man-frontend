@@ -16,7 +16,6 @@ export function useAuth() {
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  // Login mutation
   const loginMutation = useMutation<
     AuthResponse<null>,
     Error,
@@ -29,7 +28,7 @@ export function useAuth() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
-        credentials: "include", // Sets jwt cookie
+        credentials: "include",
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -39,16 +38,32 @@ export function useAuth() {
       localStorage.setItem("access_token", data.data.access_token);
       return data;
     },
-    onSuccess: () => {
-      toast.success("Login successful", {
-        style: {
-          backgroundColor: "green",
-          color: "white",
+    onSuccess: async () => {
+      // Verify authentication
+      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
         },
+        credentials: "include",
       });
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-      // Force full page reload to trigger middleware
-      window.location.href = "/dashboard";
+      if (response.ok) {
+        toast.success("Login successful", {
+          style: {
+            backgroundColor: "green",
+            color: "white",
+          },
+        });
+        queryClient.invalidateQueries({ queryKey: ["profile"] });
+        window.location.href = "/dashboard";
+      } else {
+        toast.error("Authentication failed", {
+          style: {
+            backgroundColor: "red",
+            color: "white",
+          },
+        });
+      }
     },
     onError: (error) => {
       toast.error(error.message || "Login failed", {
@@ -60,7 +75,6 @@ export function useAuth() {
     },
   });
 
-  // Signup mutation
   const signupMutation = useMutation<
     AuthResponse<SignupResponseData>,
     Error,
@@ -73,11 +87,10 @@ export function useAuth() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password, confirmPassword, name }),
-        credentials: "include", // Sets jwt cookie
+        credentials: "include",
       });
       if (!response.ok) {
         const errorData = await response.json();
-        console.log(errorData);
         if (errorData?.errors !== null) {
           throw new Error(
             errorData?.errors[0] || errorData.message || "Sign Up failed"
@@ -87,16 +100,31 @@ export function useAuth() {
       }
       return response.json();
     },
-    onSuccess: () => {
-      toast.success("Signup successful", {
-        style: {
-          backgroundColor: "green",
-          color: "white",
+    onSuccess: async () => {
+      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
         },
+        credentials: "include",
       });
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-      // Force full page reload to trigger middleware
-      window.location.href = "/dashboard";
+      if (response.ok) {
+        toast.success("Signup successful", {
+          style: {
+            backgroundColor: "green",
+            color: "white",
+          },
+        });
+        queryClient.invalidateQueries({ queryKey: ["profile"] });
+        window.location.href = "/dashboard";
+      } else {
+        toast.error("Authentication failed", {
+          style: {
+            backgroundColor: "red",
+            color: "white",
+          },
+        });
+      }
     },
     onError: (error) => {
       toast.error(error.message || "Sign Up failed", {
