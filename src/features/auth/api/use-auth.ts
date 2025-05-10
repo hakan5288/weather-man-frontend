@@ -14,7 +14,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export function useAuth() {
   const queryClient = useQueryClient();
-
   const router = useRouter();
 
   // Login mutation
@@ -32,17 +31,15 @@ export function useAuth() {
         body: JSON.stringify({ email, password }),
         credentials: "include", // Sets jwt cookie
       });
-      console.log(API_BASE_URL);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Login failed");
       }
       const data = await response.json();
-      localStorage.setItem("access_token" , data.data.access_token)
+      localStorage.setItem("access_token", data.data.access_token);
       return data;
     },
     onSuccess: () => {
-      router.push("/dashboard");
       toast.success("Login successful", {
         style: {
           backgroundColor: "green",
@@ -50,13 +47,15 @@ export function useAuth() {
         },
       });
       queryClient.invalidateQueries({ queryKey: ["profile"] });
+      // Force full page reload to trigger middleware
+      window.location.href = "/dashboard";
     },
     onError: (error) => {
-      toast.error(error.message || "Login failed" , {
+      toast.error(error.message || "Login failed", {
         style: {
           backgroundColor: "red",
           color: "white",
-        }
+        },
       });
     },
   });
@@ -89,8 +88,15 @@ export function useAuth() {
       return response.json();
     },
     onSuccess: () => {
-      router.push("/dashboard");
+      toast.success("Signup successful", {
+        style: {
+          backgroundColor: "green",
+          color: "white",
+        },
+      });
       queryClient.invalidateQueries({ queryKey: ["profile"] });
+      // Force full page reload to trigger middleware
+      window.location.href = "/dashboard";
     },
     onError: (error) => {
       toast.error(error.message || "Sign Up failed", {
@@ -125,7 +131,7 @@ export function useAuth() {
         },
       });
       router.push("/auth/login");
-    }
+    },
   });
 
   return {
