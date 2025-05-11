@@ -28,24 +28,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const pathname = usePathname(); // Get current route
+  const pathname = usePathname();
 
   useEffect(() => {
     const fetchUser = async () => {
-      console.log('Fetching user from API...');
       setIsLoading(true);
       setError(null);
 
       try {
         const token = localStorage.getItem('access_token');
-        console.log('Access token:', token ? 'Found' : 'Not found');
 
         // If no token and not on login/signup, redirect to /auth/login
         if (
           !token &&
           !['/auth/login', '/auth/signup'].includes(pathname)
         ) {
-          console.log('No token, redirecting to /auth/login');
           setUser(null);
           setError('No access token found.');
           router.push('/auth/login');
@@ -56,9 +53,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (token) {
           const API_URL = process.env.NEXT_PUBLIC_API_URL;
           const response = await fetch(`${API_URL}/auth/profile`, {
-            credentials: 'include', // Keep if backend still uses cookies
+            credentials: 'include',
             headers: {
-              Authorization: `Bearer ${token}`, // Send token in header
+              Authorization: `Bearer ${token}`,
             },
           });
 
@@ -69,7 +66,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
               setUser(null);
               // Redirect to login if not already there
               if (!['/auth/login', '/auth/signup'].includes(pathname)) {
-                console.log('Invalid token, redirecting to /auth/login');
                 router.push('/auth/login');
               }
             } else {
@@ -81,17 +77,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
           }
 
           const data = await response.json();
-          console.log('User fetched:', data);
           setUser(data.data);
           setError(null);
         }
       } catch (err) {
-        console.error('Error fetching user:', err);
         setError('Failed to fetch user data.');
         setUser(null);
         // Redirect to login if not already there
         if (!['/auth/login', '/auth/signup'].includes(pathname)) {
-          console.log('Error fetching user, redirecting to /auth/login');
           router.push('/auth/login');
         }
       } finally {
@@ -100,7 +93,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
 
     fetchUser();
-  }, [router, pathname]); // Re-run if route changes
+  }, [router, pathname]);
 
   return (
     <UserContext.Provider value={{ user, isLoading, error, setUser }}>
